@@ -1,0 +1,65 @@
+<!doctype html>
+<!--
+  ARCHIMEDES-SNIPER · Kite login hand-off page (DEC-2026-021).
+  Kite redirects here after the owner logs in. This page holds NO secrets: it turns the
+  one-time request token + today's code into a Telegram deep link to the owner's bot.
+  Published from a separate public repo (GitHub Pages). Source of truth: this file.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>Kite Login Handoff</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#ffffff; --text:#1b1f24; --muted:#5b6470; --accent:#2a6df4; --ok:#1d8a4b; --bad:#c0392b; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1216; --card:#1a1f26; --text:#e8ebef; --muted:#9aa4b0; --accent:#5b8cff; --ok:#3fbf75; --bad:#ff6b5b; } }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         background:var(--bg); color:var(--text); font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding:16px; }
+  .card { background:var(--card); border-radius:14px; padding:28px 22px; max-width:420px; width:100%; box-shadow:0 2px 14px rgba(0,0,0,.08); text-align:center; }
+  h1 { font-size:20px; margin:0 0 8px; }
+  p { color:var(--muted); margin:8px 0 20px; }
+  .btn { display:block; background:var(--accent); color:#fff; text-decoration:none; font-weight:600; font-size:18px;
+         padding:16px; border-radius:10px; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); }
+  details { margin-top:22px; text-align:left; color:var(--muted); font-size:14px; }
+  code { display:block; word-break:break-all; background:var(--bg); padding:10px; border-radius:8px; margin-top:8px; color:var(--text); }
+</style>
+</head>
+<body>
+<main class="card" id="card">
+  <h1>Checking login…</h1>
+</main>
+<script>
+(function () {
+  var BOT = "archimedes_sniper_shubit_bot";
+  var q = new URLSearchParams(window.location.search);
+  var token = q.get("request_token") || "";
+  var code = q.get("s") || "";
+  var status = q.get("status") || "";
+  // Remove the token from the address bar and history straight away.
+  if (window.location.search) { history.replaceState(null, "", window.location.pathname); }
+
+  var card = document.getElementById("card");
+  var validToken = /^[A-Za-z0-9]{8,40}$/.test(token);
+  var validCode = /^[A-Za-z0-9]{8,16}$/.test(code);
+
+  if (status !== "success" || !validToken || !validCode) {
+    card.innerHTML = '<h1 class="bad">Login not completed</h1>' +
+      '<p>Kite did not send a valid login. Use today\'s login link from the bot again.</p>';
+    return;
+  }
+  var payload = token + "_" + code;   // max 40 + 1 + 16 = 57 chars (Telegram limit 64)
+  var link = "https://t.me/" + BOT + "?start=" + payload;
+  card.innerHTML =
+    '<h1 class="ok">Kite login OK</h1>' +
+    '<p>One more tap: send it to your bot, then press <b>START</b> in Telegram.</p>' +
+    '<a class="btn" id="go" rel="noreferrer" href="' + link + '">Send to my bot</a>' +
+    '<details><summary>Button not working?</summary>' +
+    'Open the bot and send this message within a few minutes:<code>/token ' + payload + '</code></details>';
+})();
+</script>
+</body>
+</html>

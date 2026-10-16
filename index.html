@@ -8,6 +8,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-ZOT8LKzmUH39ptj1kxj/JwXtnWzSW1BZeT6hlAf/elM='; style-src 'sha256-P9+bYmKVDtaq6HfpjyK7ZrjbIhUc4/svbECaw+2Sst8='; img-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
@@ -34,6 +35,8 @@
 </main>
 <script>
 (function () {
+  // Nothing taken from the address bar is ever inserted as HTML: the token and code are checked
+  // against a strict letters-and-digits shape, then used only as plain text and in the t.me link.
   var BOT = "archimedes_sniper_shubit_bot";
   var q = new URLSearchParams(window.location.search);
   var token = q.get("request_token") || "";
@@ -43,22 +46,37 @@
   if (window.location.search) { history.replaceState(null, "", window.location.pathname); }
 
   var card = document.getElementById("card");
+  function el(tag, text, cls) {
+    var e = document.createElement(tag);
+    if (text) { e.textContent = text; }
+    if (cls) { e.className = cls; }
+    return e;
+  }
+  card.textContent = "";
+
   var validToken = /^[A-Za-z0-9]{8,40}$/.test(token);
   var validCode = /^[A-Za-z0-9]{8,16}$/.test(code);
-
   if (status !== "success" || !validToken || !validCode) {
-    card.innerHTML = '<h1 class="bad">Login not completed</h1>' +
-      '<p>Kite did not send a valid login. Use today\'s login link from the bot again.</p>';
+    card.appendChild(el("h1", "Login not completed", "bad"));
+    card.appendChild(el("p", "Kite did not send a valid login. Use today's login link from the bot again."));
     return;
   }
   var payload = token + "_" + code;   // max 40 + 1 + 16 = 57 chars (Telegram limit 64)
-  var link = "https://t.me/" + BOT + "?start=" + payload;
-  card.innerHTML =
-    '<h1 class="ok">Kite login OK</h1>' +
-    '<p>One more tap: send it to your bot, then press <b>START</b> in Telegram.</p>' +
-    '<a class="btn" id="go" rel="noreferrer" href="' + link + '">Send to my bot</a>' +
-    '<details><summary>Button not working?</summary>' +
-    'Open the bot and send this message within a few minutes:<code>/token ' + payload + '</code></details>';
+  card.appendChild(el("h1", "Kite login OK", "ok"));
+  var p = el("p", "One more tap: send it to your bot, then press ");
+  p.appendChild(el("b", "START"));
+  p.appendChild(document.createTextNode(" in Telegram."));
+  card.appendChild(p);
+  var a = el("a", "Send to my bot", "btn");
+  a.id = "go";
+  a.rel = "noreferrer";
+  a.href = "https://t.me/" + BOT + "?start=" + encodeURIComponent(payload);
+  card.appendChild(a);
+  var d = el("details");
+  d.appendChild(el("summary", "Button not working?"));
+  d.appendChild(document.createTextNode("Open the bot and send this message within a few minutes:"));
+  d.appendChild(el("code", "/token " + payload));
+  card.appendChild(d);
 })();
 </script>
 </body>
